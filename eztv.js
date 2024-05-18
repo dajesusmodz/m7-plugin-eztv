@@ -1,7 +1,7 @@
 /**
- * EZTV plugin for Movian Media Center
+ * EZTV plugin for M7 Media Center
  *
- *  Copyright (C) 2015-2018 Gekko, lprot
+ *  Copyright (C) 2015-2018 Gekko, lprot | 2024 F0R3V3R50F7
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ function setPageHeader(page, title) {
     if (page.metadata) {
         page.metadata.title = title;
         page.metadata.logo = logo;
+        page.metadata.background = Plugin.path + "bg.png"
     }
     page.type = "directory";
     page.contents = "items";
@@ -250,6 +251,7 @@ function search(page, query) {
 
 new page.Route(plugin.id + ":start", function (page) {
     setPageHeader(page, plugin.synopsis);
+    page.model.contents = 'grid';
     page.appendItem(plugin.id + ":search:", 'search', {
         title: 'Search at ' + service.eztvBaseUrl
     });
