@@ -456,11 +456,11 @@ new page.Route(plugin.id + ":detail:(.*)", function(page, id) {
 
     setPageHeader(page, tmdbShow.name);
     
-    page.options.createAction('addShowToFavorites', 'Add Selected Show to My Favorites', function() {
+    page.options.createAction('addShowToFavorites', 'Save this show to My Favorites', function() {
         addSelectedShowToFavorites(page, tmdbShow);
     });
 
-    page.options.createAction('removeShowFromFavorites', 'Remove Selected Show from My Favorites', function() {
+    page.options.createAction('removeShowFromFavorites', 'Remove this show from My Favorites', function() {
         removeSelectedShowFromFavorites(page, tmdbShow);
     });
 
@@ -513,4 +513,5 @@ new page.Route(plugin.id + ':myfavs', function(page) {
             description: new RichText(coloredStr('Link: ', orange) + decodeURIComponent(itemUrl)),
         });
     }
+page.loading = false;
 });
