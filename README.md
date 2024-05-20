@@ -1,4 +1,4 @@
-![YTS Logo](/logo.png)
+![EZTV Logo](/logo.png)
 
 **Screenshot:**
 
@@ -24,7 +24,7 @@
 
 
 
- ![Pre-Release Download (May Contain Bugs)](/yts_unstable.zip?raw=true)
+ ![Pre-Release Download (Branch Coming Soon)](/eztv_unstable.zip?raw=true)
 
 **Available Languages:**
 
