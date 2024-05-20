@@ -345,9 +345,7 @@ function search(page, query) {
 new page.Route(plugin.id + ":start", function (page) {
     setPageHeader(page, plugin.synopsis);
     page.model.contents = 'grid';
-    page.appendItem(plugin.id + ":search:", 'search', {
-        title: 'Search at ' + service.eztvBaseUrl
-    });
+
 
     if (!service.disableMyFavorites) {
         page.appendItem('', 'separator', {
@@ -426,10 +424,16 @@ new page.Route(plugin.id + ":start", function (page) {
             });
           }
         }
+    
+    page.appendItem('', 'separator', { title: '' });
+    page.appendItem('', 'separator', { title: 'Discover Shows' }); 
 
-    page.appendItem('', 'separator', { title: 'Popular Shows' }); 
-    page.appendItem('', 'separator', { title: '' }); 
+    page.appendItem('', 'separator', { title: '' });
+    page.appendItem(plugin.id + ":search:", 'search', {
+        title: 'Search for Shows '
+    });
 
+    page.appendItem('', 'separator', { title: '' });
     tvShowList(page);
     page.loading = false;
 });
