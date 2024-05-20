@@ -1,5 +1,5 @@
 {
-  "description": "This is a fork of Hackflix by Wolfy",
+  "description": "<p>Changelog (21/05/24)<p>* Fixed Infinite Loading Bug in 'My Favorites' Page.<p>* Improved Box Set Sorting and Search Result Accuracy.<p>* Added Invisible Seperators on Start Page for Better Presentation",
   "author": "Gekko, iprot, Wolfy, F0R3V3R50F7",
   "homepage": "https://github.com/dajesusmodz/m7-plugin-eztv",
   "title": "EZTV",
