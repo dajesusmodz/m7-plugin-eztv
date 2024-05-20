@@ -20,6 +20,7 @@ var page = require('movian/page');
 var service = require('movian/service');
 var settings = require('movian/settings');
 var tmdbApi = require('tmdb-api');
+var popup = require('native/popup');
 var eztvApi = require('eztv-api');
 var plugin = JSON.parse(Plugin.manifest);
 var logo = Plugin.path + "logo.png";
@@ -74,6 +75,43 @@ settings.createString('tmdbApiKey', "TMDB api key to display popular tv shows", 
 settings.createBool('enableH265Filter', 'Filter H265 Content (For PS3)', false, function (v) {
     service.enableH265Filter = v;
 });
+settings.createBool('disableMyFavorites', 'Hide My Favorites', false, function(v) {
+    service.disableMyFavorites = v;
+  });
+
+var store = require('movian/store').create('favorites');
+if (!store.list) {
+  store.list = '[]';
+}
+
+function addSelectedShowToFavorites(page, tmdbShow) {
+    var tmdbId = tmdbShow.id; // Get TMDB ID
+    var tmdbIcon = tmdbApi.retrievePoster(tmdbShow);
+    var tmdbName = tmdbShow.name;
+
+    var entry = JSON.stringify({
+        tmdbId: tmdbId, // Store TMDB ID
+        title: encodeURIComponent(tmdbName),
+        icon: encodeURIComponent(tmdbIcon),
+        link: encodeURIComponent(plugin.id + ':detail:' + tmdbId) // Store the correct URL
+    });
+    store.list = JSON.stringify([entry].concat(eval(store.list)));
+    popup.notify('\'' + tmdbName + '\' has been added to My Favorites.', 3);
+}
+
+function removeSelectedShowFromFavorites(page, tmdbShow) {
+    var tmdbId = tmdbShow.id; // Get TMDB ID
+
+    var list = eval(store.list);
+    var newList = list.filter(function(item) {
+        var parsedItem = JSON.parse(item);
+        return parsedItem.tmdbId !== tmdbId;
+    });
+
+    store.list = JSON.stringify(newList);
+    popup.notify('\'' + tmdbShow.name + '\' has been removed from My Favorites.', 3);
+    page.redirect(plugin.id + ':myfavs');
+}
 
 function bytesToSize(bytes) {
     var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -101,8 +139,8 @@ function tvShowList(page) {
         var json = tmdbApi.retrievePopularShows(fromPage)
         page.loading = false;
         for (var i in json.results) {
-            var show = json.results[i]
-            page.appendItem(plugin.id + ':detail:' + show.id, "directory", tmdbShowMetadata(show));
+            var show = json.results[i];
+            var item = page.appendItem(plugin.id + ':detail:' + show.id, "directory", tmdbShowMetadata(show));
             page.entries++;
         }
         fromPage++;
@@ -244,6 +282,7 @@ function browseShowEpisodes(page, tmdbShow) {
                         tagline: new RichText(coloredStr('Released: ', orange) + new Date(torrent.date_released_unix * 1000)),
                         description: new RichText(episodeDetails.overview)
                     });
+
                     page.entries++;
                 }
             }
@@ -261,10 +300,10 @@ function browseShowEpisodes(page, tmdbShow) {
 function searchOnTmdb(page, query) {
     setPageHeader(page, plugin.title);
     page.entries = 0;
-    var response = tmdbApi.searchShow(query)
+    var response = tmdbApi.searchShow(query);
     for (var i in response.results) {
-        var show = response.results[i]
-        page.appendItem(plugin.id + ':detail:' + show.id, "directory", tmdbShowMetadata(show));
+        var show = response.results[i];
+        var item = page.appendItem(plugin.id + ':detail:' + show.id, "directory", tmdbShowMetadata(show));
         page.entries++;
     }
     page.loading = false;
@@ -309,6 +348,88 @@ new page.Route(plugin.id + ":start", function (page) {
     page.appendItem(plugin.id + ":search:", 'search', {
         title: 'Search at ' + service.eztvBaseUrl
     });
+
+    if (!service.disableMyFavorites) {
+        page.appendItem('', 'separator', {
+          title: 'My Favorites',
+        });
+        page.appendItem('', 'separator', {
+          title: '',
+        });
+      
+        if (!service.disableMyFavorites);
+        var list = eval(store.list);
+          var pos = 0;
+          for (var i in list) {
+            if (pos >= 4) break; // Stop after listing 4 items
+            var itemmd = JSON.parse(list[i]);
+            var item = page.appendItem(decodeURIComponent(itemmd.link), 'playable', {
+              title: decodeURIComponent(itemmd.title),
+              icon: itemmd.icon ? decodeURIComponent(itemmd.icon) : null,
+              description: new RichText(coloredStr('Link: ', orange) + decodeURIComponent(itemmd.link)),
+            });
+            pos++;
+          }
+        }
+      
+        if (!service.disableMyFavorites) {
+          var list = eval(store.list);
+        
+          if (!list || list.length === 0) {
+            page.appendItem(plugin.id + ":start", "directory", {
+              title: "Refresh",
+              icon: 'https://i.postimg.cc/T1j3TpwG/refresh.png'
+            });
+          }
+        }
+      
+        if (!service.disableMyFavorites) {
+          var list = eval(store.list);
+        
+          if (!list || list.length === 1) {
+            page.appendItem(plugin.id + ":start", "directory", {
+              title: "Refresh",
+              icon: 'https://i.postimg.cc/T1j3TpwG/refresh.png'
+            });
+          }
+        }
+      
+        if (!service.disableMyFavorites) {
+          var list = eval(store.list);
+        
+          if (!list || list.length === 2) {
+            page.appendItem(plugin.id + ":start", "directory", {
+              title: "Refresh",
+              icon: 'https://i.postimg.cc/T1j3TpwG/refresh.png'
+            });
+          }
+        }
+      
+        if (!service.disableMyFavorites) {
+          var list = eval(store.list);
+        
+          if (!list || list.length === 3) {
+            page.appendItem(plugin.id + ":start", "directory", {
+              title: "Refresh",
+              icon: 'https://i.postimg.cc/T1j3TpwG/refresh.png'
+            });
+          }
+        }
+      
+        if (!service.disableMyFavorites) {
+          var list = eval(store.list);
+      
+            if (list && list.length > 0) {
+              page.appendItem(plugin.id + ":myfavs", "directory", {
+                title: "Show All...",
+                icon: 'https://i.postimg.cc/zGT28Cz2/favs.png'
+            });
+          }
+        }
+
+    page.appendItem('', 'separator', { title: 'Popular Shows' }); 
+    page.appendItem('', 'separator', { title: '' }); 
+
     tvShowList(page);
     page.loading = false;
 });
@@ -330,26 +451,34 @@ new page.Route(plugin.id + ":play:(.*):(.*):(.*):(.*):(.*)", function (page, url
     page.loading = false;
 });
 
-new page.Route(plugin.id + ":detail:(.*)", function (page, id) {
+new page.Route(plugin.id + ":detail:(.*)", function(page, id) {
     var tmdbShow = tmdbApi.retrieveShowById(id);
 
     setPageHeader(page, tmdbShow.name);
+    
+    page.options.createAction('addShowToFavorites', 'Add Selected Show to My Favorites', function() {
+        addSelectedShowToFavorites(page, tmdbShow);
+    });
 
-    var showExistOnEZTV = false
-    var imdbId = tmdbShow.external_ids.imdb_id
-    if(imdbId){
-        showExistOnEZTV = eztvApi.showExists(imdbId)
+    page.options.createAction('removeShowFromFavorites', 'Remove Selected Show from My Favorites', function() {
+        removeSelectedShowFromFavorites(page, tmdbShow);
+    });
+
+    var showExistOnEZTV = false;
+    var imdbId = tmdbShow.external_ids.imdb_id;
+    if (imdbId) {
+        showExistOnEZTV = eztvApi.showExists(imdbId);
     }
 
-    if(imdbId && showExistOnEZTV){
-        browseShowEpisodes(page, tmdbShow)
+    if (imdbId && showExistOnEZTV) {
+        browseShowEpisodes(page, tmdbShow);
     } else {
         page.appendItem("", "separator", {
             title: new RichText(coloredStr('No results', 'FFA500', "+2"))
         });
         page.loading = false;
     }
-    
+
 });
 
 new page.Route(plugin.id + ":search:(.*)", function (page, query) {
@@ -358,4 +487,30 @@ new page.Route(plugin.id + ":search:(.*)", function (page, query) {
 
 page.Searcher(plugin.id, logo, function (page, query) {
     searchOnTmdb(page, query);
+});
+
+//My Favourites Page
+new page.Route(plugin.id + ':myfavs', function(page) {
+    page.metadata.icon = 'https://i.postimg.cc/zGT28Cz2/favs.png';
+    setPageHeader(page, "My Favorites");
+    page.model.contents = 'grid';
+    popup.notify("Empty My Favorites in the Side-Menu", 7);
+
+    page.options.createAction('cleanFavorites', 'Empty My Favorites', function() {
+        store.list = '[]';
+        popup.notify('Favorites has been emptied successfully', 3);
+        page.redirect(plugin.id + ':start');
+    });
+
+    var list = eval(store.list);
+    for (var i in list) {
+        var itemmd = JSON.parse(list[i]);
+        // Construct the URL using TMDB ID
+        var itemUrl = decodeURIComponent(itemmd.link); // Decode the URL for the detail route
+        var item = page.appendItem(itemUrl, "directory", {
+            title: decodeURIComponent(itemmd.title),
+            icon: itemmd.icon ? decodeURIComponent(itemmd.icon) : null,
+            description: new RichText(coloredStr('Link: ', orange) + decodeURIComponent(itemUrl)),
+        });
+    }
 });
