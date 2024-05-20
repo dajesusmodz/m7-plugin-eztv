@@ -202,6 +202,8 @@ function browseShowEpisodes(page, tmdbShow) {
     var tryToSearch = true;
     page.entries = 0;
 
+    var boxSetsAdded = false; // Flag to check if "Box Sets" separator is added
+
     function loader() {
         if (!tryToSearch) return false;
         var torrents = eztvApi.searchTorrentByImdbId(imdbId, fromPage, {resolutions: ["720","1080"], minSeeds: service.minSeed});
@@ -239,12 +241,25 @@ function browseShowEpisodes(page, tmdbShow) {
             for (var episode in seasons[season]) {
                 var episodeTitle = ""; // Initialize the episode title
 
-                // Check if the episode number is '0'
-                if (episode === "0") {
-                    // For episode '0', set the separator title to "Box Sets"
-                    page.appendItem(null, "separator", {
-                        title: "Box Sets"
-                    });
+                // Check if the torrent filename matches the Box Set pattern
+                var isBoxSet = false;
+                var boxSetRegex = /S\d{2}(?!E\d{2})/i;
+
+                for (var i in seasons[season][episode]) {
+                    if (boxSetRegex.test(seasons[season][episode][i].title)) {
+                        isBoxSet = true;
+                        break;
+                    }
+                }
+
+                if (isBoxSet) {
+                    // Add the "Box Sets" separator only once
+                    if (!boxSetsAdded) {
+                        page.appendItem(null, "separator", {
+                            title: "Box Sets"
+                        });
+                        boxSetsAdded = true; // Set the flag to true
+                    }
                 } else {
                     // Retrieve TMDB episode title
                     if (episodeDetails && episodeDetails.name) {
@@ -263,14 +278,14 @@ function browseShowEpisodes(page, tmdbShow) {
                     var torrent = torrents[i];
                     var itemUrl;
 
-                    if (torrent.episode === "0") {
+                    if (isBoxSet) {
                         itemUrl = "torrent:browse:" + torrent.torrent_url;
                     } else {
                         itemUrl = plugin.id + ':play:' + torrenUrlDecoded + ':' + decodeURI(torrent.title) + ':' + torrent.imdb_id + ':' + torrent.season + ':' + torrent.episode;
                     }
 
                     var item = page.appendItem(itemUrl, "video", {
-                        title: "S" + torrent.season + "E" + torrent.episode + " - " + torrent.title,
+                        title: "Seeders: " + torrent.seeds + " | " + torrent.title, // Modified title to include seeder count
                         icon: tmdbApi.retrieveEpisodeScreenShot(episodeDetails, tmdbShow),
                         vtype: 'tvseries',
                         season: {number: +torrent.season},
