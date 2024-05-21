@@ -203,6 +203,7 @@ function browseShowEpisodes(page, tmdbShow) {
     page.entries = 0;
 
     var boxSetsAdded = false; // Flag to check if "Box Sets" separator is added
+    var addedSeparators = {}; // Object to store added separators
 
     function loader() {
         if (!tryToSearch) return false;
@@ -215,7 +216,7 @@ function browseShowEpisodes(page, tmdbShow) {
         for (var i in torrents) {
             var torrent = torrents[i];
             var torrenUrlDecoded = decodeURI(torrent.torrent_url);
-            var episodeDetails = tmdbApi.retrieveEpisodeDetail(tmdbShow.id, torrent.season, torrent.episode);
+            
 
             // Check if the season exists in the map, if not create it
             if (!seasons[torrent.season]) {
@@ -261,15 +262,25 @@ function browseShowEpisodes(page, tmdbShow) {
                         boxSetsAdded = true; // Set the flag to true
                     }
                 } else {
-                    // Retrieve TMDB episode title
-                    if (episodeDetails && episodeDetails.name) {
-                        episodeTitle = " | " + episodeDetails.name;
-                    }
+                    // Generate a unique key for the season and episode
+                    var separatorKey = "Season " + season + " | Episode " + episode;
 
-                    // Append TMDB episode title to the separator title
-                    page.appendItem(null, "separator", {
-                        title: "Season " + season + " | Episode " + episode + episodeTitle // Modified separator title
-                    });
+                    // Add the separator only if it hasn't been added already
+                    if (!addedSeparators[separatorKey]) {
+                        // Retrieve TMDB episode title
+                        var episodeDetails = tmdbApi.retrieveEpisodeDetail(tmdbShow.id, season, episode);
+                        if (episodeDetails && episodeDetails.name) {
+                            episodeTitle = " | " + episodeDetails.name;
+                        }
+
+                        // Append TMDB episode title to the separator title
+                        page.appendItem(null, "separator", {
+                            title: separatorKey + episodeTitle // Modified separator title
+                        });
+
+                        // Mark this separator as added
+                        addedSeparators[separatorKey] = true;
+                    }
                 }
 
                 var torrents = seasons[season][episode];
@@ -284,9 +295,14 @@ function browseShowEpisodes(page, tmdbShow) {
                         itemUrl = plugin.id + ':play:' + torrenUrlDecoded + ':' + decodeURI(torrent.title) + ':' + torrent.imdb_id + ':' + torrent.season + ':' + torrent.episode;
                     }
 
+                    var iconUrl = "";
+                    if (episodeDetails && episodeDetails.still_path) {
+                        iconUrl = tmdbApi.retrieveEpisodeScreenShot(episodeDetails, tmdbShow);
+                    }
+
                     var item = page.appendItem(itemUrl, "video", {
                         title: "Seeders: " + torrent.seeds + " | " + torrent.title, // Modified title to include seeder count
-                        icon: tmdbApi.retrieveEpisodeScreenShot(episodeDetails, tmdbShow),
+                        icon: iconUrl,
                         vtype: 'tvseries',
                         season: {number: +torrent.season},
                         episode: {title: torrent.title, number: +torrent.episode},
@@ -295,7 +311,7 @@ function browseShowEpisodes(page, tmdbShow) {
                             coloredStr(' Size: ', orange) + bytesToSize(torrent.size_bytes) +
                             (torrent.imdb_id ? coloredStr('<br>IMDb ID: ', orange) + 'tt' + torrent.imdb_id : '')),
                         tagline: new RichText(coloredStr('Released: ', orange) + new Date(torrent.date_released_unix * 1000)),
-                        description: new RichText(episodeDetails.overview)
+                        description: new RichText(episodeDetails ? episodeDetails.overview : "")
                     });
 
                     page.entries++;
