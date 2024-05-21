@@ -1,5 +1,5 @@
 {
-  "description": "<p>Changelog (1.7 (00/05/24)<p>* Fixed Infinite Loading Bug in 'My Favorites' Page.<p>* Improved Box Set Sorting and Search Result Accuracy.<p>* Added Invisible Seperators on Start Page for Better Presentation",
+  "description": "<p>Changelog (21/05/24):<p>* Improved Episode Search Logic.<p>* Fixed Corrupted Seperator Episode Titles.<p>* Added New Background.",
   "author": "Gekko, iprot, Wolfy, F0R3V3R50F7",
   "homepage": "https://github.com/dajesusmodz/m7-plugin-eztv",
   "title": "EZTV",
