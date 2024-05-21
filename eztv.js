@@ -57,7 +57,7 @@ settings.createBool('enableMetadata', 'Enable metadata fetching', true, function
     service.enableMetadata = v;
 });
 
-settings.createString('eztvBaseURL', "EZTV base URL without '/' at the end", 'https://eztv.wf', function (v) {
+settings.createString('eztvBaseURL', "EZTV base URL without '/' at the end", 'https://eztvx.to', function (v) {
     service.eztvBaseUrl = v;
 });
 

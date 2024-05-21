@@ -4,7 +4,7 @@
   "homepage": "https://github.com/dajesusmodz/m7-plugin-eztv",
   "title": "EZTV",
   "synopsis": "EZTV, your one stop source for all your favorite TV shows.",
-  "version": "1.7",
+  "version": "1.8",
   "file": "eztv.js",
   "m7Version": "7.0.0",
   "type": "ecmascript",
