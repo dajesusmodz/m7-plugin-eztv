@@ -197,83 +197,124 @@ function browseItems(page, query) {
 
 function browseShowEpisodes(page, tmdbShow) {
     var imdbId = tmdbShow.external_ids.imdb_id;
-
     var fromPage = 1;
     var tryToSearch = true;
     page.entries = 0;
+    page.loading = true;
+
 
     var boxSetsAdded = false; // Flag to check if "Box Sets" separator is added
     var addedSeparators = {}; // Object to store added separators
 
-    function loader() {
-        if (!tryToSearch) return false;
-        var torrents = eztvApi.searchTorrentByImdbId(imdbId, fromPage, {resolutions: ["720", "1080"], minSeeds: service.minSeed});
-        page.loading = false;
+    // Create a map to store seasons and episodes
+    var seasons = {};
 
-        // Create a map to store seasons and episodes
-        var seasons = {};
-
-        // First, collect all the torrent information
-        for (var i in torrents) {
-            var torrent = torrents[i];
-            var torrenUrlDecoded = decodeURI(torrent.torrent_url)
-
-            // Check if the season exists in the map, if not create it
-            if (!seasons[torrent.season]) {
-                seasons[torrent.season] = {};
+    function fetchAllTorrents(callback) {
+        function fetchNextPage() {
+            if (!tryToSearch) {
+                callback();
+                return;
             }
 
-            // Check if the episode exists in the season, if not create it
-            if (!seasons[torrent.season][torrent.episode]) {
-                seasons[torrent.season][torrent.episode] = {
-                    torrents: [],
-                    episodeDetails: null
-                };
+            var torrents = eztvApi.searchTorrentByImdbId(imdbId, fromPage, {resolutions: ["720", "1080"], minSeeds: service.minSeed});
+            if (torrents.length === 0) {
+                tryToSearch = false;
+                callback();
+                return;
             }
 
-            // Filter out torrents containing 'x265', 'X265', 'H265', 'h265', 'h.265', 'x.265', 'X.265', 'H.265'
-            if (service.enableH265Filter && /[xXhH]265/i.test(torrent.title)) {
-                continue; // Skip this torrent
+            // Collect all the torrent information
+            for (var i in torrents) {
+                var torrent = torrents[i];
+                var torrentUrlDecoded = decodeURI(torrent.torrent_url);
+
+                // Filter out torrents containing 'x265', 'X265', 'H265', 'h265', 'h.265', 'x.265', 'X.265', 'H.265'
+                if (service.enableH265Filter && /[xXhH]265/i.test(torrent.title)) {
+                    continue; // Skip this torrent
+                }
+
+                // Check if the torrent filename matches the Box Set pattern
+                var isBoxSet = /S\d{2}(?!E\d{2})/i.test(torrent.title);
+
+                if (isBoxSet) {
+                    if (!seasons['BoxSets']) {
+                        seasons['BoxSets'] = [];
+                    }
+                    seasons['BoxSets'].push(torrent);
+                } else {
+                    // Check if the season exists in the map, if not create it
+                    if (!seasons[torrent.season]) {
+                        seasons[torrent.season] = {};
+                    }
+
+                    // Check if the episode exists in the season, if not create it
+                    if (!seasons[torrent.season][torrent.episode]) {
+                        seasons[torrent.season][torrent.episode] = {
+                            torrents: [],
+                            episodeDetails: null
+                        };
+                    }
+
+                    // Push the torrent into the correct episode
+                    seasons[torrent.season][torrent.episode].torrents.push(torrent);
+                }
             }
 
-            // Push the torrent into the correct episode
-            seasons[torrent.season][torrent.episode].torrents.push(torrent);
+            fromPage++;
+            fetchNextPage();
         }
 
-        // Now, fetch episode details for all collected episodes
+        fetchNextPage();
+    }
+
+    function processTorrents() {
+        // Fetch episode details for all collected episodes
         for (var season in seasons) {
-            for (var episode in seasons[season]) {
-                seasons[season][episode].episodeDetails = tmdbApi.retrieveEpisodeDetail(tmdbShow.id, season, episode);
+            if (season !== 'BoxSets') {
+                for (var episode in seasons[season]) {
+                    seasons[season][episode].episodeDetails = tmdbApi.retrieveEpisodeDetail(tmdbShow.id, season, episode);
+                }
+            }
+        }
+
+        // Iterate over the Box Sets and add them to the page
+        if (seasons['BoxSets'] && !boxSetsAdded) {
+            page.appendItem(null, "separator", {
+                title: "Box Sets"
+            });
+            boxSetsAdded = true; // Set the flag to true
+
+            var boxSets = seasons['BoxSets'];
+            for (var i in boxSets) {
+                var torrent = boxSets[i];
+                var itemUrl = "torrent:browse:" + torrent.torrent_url;
+                var thumbnail = tmdbShow.poster_path ? "https://image.tmdb.org/t/p/w500" + tmdbShow.poster_path : null;
+
+                var item = page.appendItem(itemUrl, "video", {
+                    title: "Seeders: " + torrent.seeds + " | " + torrent.title, // Modified title to include seeder count
+                    icon: thumbnail,
+                    vtype: 'tvseries',
+                    season: {number: +torrent.season},
+                    episode: {title: torrent.title, number: +torrent.episode},
+                    genre: new RichText(coloredStr('S: ', orange) + coloredStr(torrent.seeds, green) +
+                        coloredStr(' P: ', orange) + coloredStr(torrent.peers, red) +
+                        coloredStr(' Size: ', orange) + bytesToSize(torrent.size_bytes) +
+                        (torrent.imdb_id ? coloredStr('<br>IMDb ID: ', orange) + 'tt' + torrent.imdb_id : '')),
+                    tagline: new RichText(coloredStr('Released: ', orange) + new Date(torrent.date_released_unix * 1000)),
+                    description: new RichText("Box Set")
+                });
+
+                page.entries++;
             }
         }
 
         // Iterate over the seasons and episodes map and create the directories
         for (var season in seasons) {
-            for (var episode in seasons[season]) {
-                var episodeDetails = seasons[season][episode].episodeDetails;
-                var episodeTitle = episodeDetails && episodeDetails.name ? " | " + episodeDetails.name : ""; // Initialize the episode title
+            if (season !== 'BoxSets') {
+                for (var episode in seasons[season]) {
+                    var episodeDetails = seasons[season][episode].episodeDetails;
+                    var episodeTitle = episodeDetails && episodeDetails.name ? " | " + episodeDetails.name : ""; // Initialize the episode title
 
-                // Check if the torrent filename matches the Box Set pattern
-                var isBoxSet = false;
-                var boxSetRegex = /S\d{2}(?!E\d{2})/i;
-
-                for (var i in seasons[season][episode].torrents) {
-                    if (boxSetRegex.test(seasons[season][episode].torrents[i].title)) {
-                        isBoxSet = true;
-                        break;
-                    }
-                }
-
-                if (isBoxSet) {
-                    // Add the "Box Sets" separator only once
-                    if (!boxSetsAdded) {
-                        page.appendItem(null, "separator", {
-                            title: "Box Sets"
-                        });
-                        boxSetsAdded = true; // Set the flag to true
-                    }
-                        
-                    } else {
                     var separatorTitle = "Season " + season + " | Episode " + episode + episodeTitle;
                     if (!addedSeparators[separatorTitle]) {
                         page.appendItem(null, "separator", {
@@ -281,53 +322,44 @@ function browseShowEpisodes(page, tmdbShow) {
                         });
                         addedSeparators[separatorTitle] = true; // Mark separator as added
                     }
-                }
 
-                var torrents = seasons[season][episode].torrents;
+                    var torrents = seasons[season][episode].torrents;
 
-                for (var i in torrents) {
-                    var torrent = torrents[i];
-                    var itemUrl;
+                    for (var i in torrents) {
+                        var torrent = torrents[i];
+                        var itemUrl = plugin.id + ':play:' + decodeURI(torrent.torrent_url) + ':' + decodeURI(torrent.title) + ':' + torrent.imdb_id + ':' + torrent.season + ':' + torrent.episode;
 
-                    if (isBoxSet) {
-                        itemUrl = "torrent:browse:" + torrent.torrent_url;
-                    } else {
-                        itemUrl = plugin.id + ':play:' + decodeURI(torrent.torrent_url) + ':' + decodeURI(torrent.title) + ':' + torrent.imdb_id + ':' + torrent.season + ':' + torrent.episode;
+                        var thumbnail = episodeDetails && episodeDetails.still_path ? "https://image.tmdb.org/t/p/w500" + episodeDetails.still_path : null;
+
+                        var item = page.appendItem(itemUrl, "video", {
+                            title: "Seeders: " + torrent.seeds + " | " + torrent.title, // Modified title to include seeder count
+                            icon: thumbnail,
+                            vtype: 'tvseries',
+                            season: {number: +torrent.season},
+                            episode: {title: torrent.title, number: +torrent.episode},
+                            genre: new RichText(coloredStr('S: ', orange) + coloredStr(torrent.seeds, green) +
+                                coloredStr(' P: ', orange) + coloredStr(torrent.peers, red) +
+                                coloredStr(' Size: ', orange) + bytesToSize(torrent.size_bytes) +
+                                (torrent.imdb_id ? coloredStr('<br>IMDb ID: ', orange) + 'tt' + torrent.imdb_id : '')),
+                            tagline: new RichText(coloredStr('Released: ', orange) + new Date(torrent.date_released_unix * 1000)),
+                            description: new RichText(episodeDetails ? episodeDetails.overview : "No description available")
+                        });
+
+                        page.entries++;
                     }
-
-                    var thumbnail;
-                    if (isBoxSet) {
-                        thumbnail = tmdbShow.poster_path ? "https://image.tmdb.org/t/p/w500" + tmdbShow.poster_path : null;
-                    } else {
-                        thumbnail = episodeDetails && episodeDetails.still_path ? "https://image.tmdb.org/t/p/w500" + episodeDetails.still_path : null;
-                    }
-
-                    var item = page.appendItem(itemUrl, "video", {
-                        title: "Seeders: " + torrent.seeds + " | " + torrent.title, // Modified title to include seeder count
-                        icon: thumbnail,
-                        vtype: 'tvseries',
-                        season: {number: +torrent.season},
-                        episode: {title: torrent.title, number: +torrent.episode},
-                        genre: new RichText(coloredStr('S: ', orange) + coloredStr(torrent.seeds, green) +
-                            coloredStr(' P: ', orange) + coloredStr(torrent.peers, red) +
-                            coloredStr(' Size: ', orange) + bytesToSize(torrent.size_bytes) +
-                            (torrent.imdb_id ? coloredStr('<br>IMDb ID: ', orange) + 'tt' + torrent.imdb_id : '')),
-                        tagline: new RichText(coloredStr('Released: ', orange) + new Date(torrent.date_released_unix * 1000)),
-                        description: new RichText(episodeDetails ? episodeDetails.overview : "No description available")
-                    });
-
-                    page.entries++;
                 }
             }
         }
 
-        fromPage++;
-        return true;
+        page.loading = false;
     }
 
-    loader();
-    page.paginator = loader;
-    page.loading = false;
+    fetchAllTorrents(processTorrents);
+
+    page.paginator = function() {
+        return false; // Disable pagination as all data is loaded at once
+    };
+    setPageHeader(page, tmdbShow.name);
 }
 
 function searchOnTmdb(page, query) {
@@ -508,14 +540,20 @@ new page.Route(plugin.id + ":detail:(.*)", function(page, id) {
     }
 
     if (imdbId && showExistOnEZTV) {
-        browseShowEpisodes(page, tmdbShow);
+        page.loading = true;
+        page.metadata.title = "Downloading Data from EZTV, this may take a while..."; // Set the loading message
+
+        // Run the browseShowEpisodes function asynchronously to allow the loading message to be shown
+        setTimeout(function() {
+            browseShowEpisodes(page, tmdbShow);
+            page.loading = false; // Once the data is loaded, stop the loading animation
+        }, 1);
     } else {
         page.appendItem("", "separator", {
             title: new RichText(coloredStr('No results', 'FFA500', "+2"))
         });
         page.loading = false;
     }
-
 });
 
 new page.Route(plugin.id + ":search:(.*)", function (page, query) {
