@@ -12,7 +12,7 @@
 * Apply Minimum Seeder Value to Search Results.
 * Organised Search Result Groups with Box Sets/TV Packs
 
-**How to Install:**
+**How to Install (Official Plugin Repository):**
 
 1) Navigate to Movian/M7 > Settings > General > Alternative Plugin Repository URL:
 
@@ -25,6 +25,20 @@
 5) Select Install (Plugin will now update automatically).
 
 6) Return to Movian/M7 Home Screen and Enjoy!
+
+**How to Install (ZIP):**
+
+1) Coming Soon!
+
+2) 
+
+3) 
+
+4) 
+
+5) 
+
+6) 
 
 
 
