@@ -6,21 +6,25 @@
 
 **Features:**
 
-
+* Stream TV Shows from EZTV.
+* Save Your Favorite Shows to 'My Favorites'.
+* Filter Out H.265 (HEVC) Search Results (For PlayStation 3).
+* Apply Minimum Seeder Value to Search Results.
+* Organised Search Result Groups with Box Sets/TV Packs
 
 **How to Install:**
 
-1) Placeholder
+1) Navigate to Movian/M7 > Settings > General > Alternative Plugin Repository URL:
 
-2) Placeholder
+2) Set this value to 'https://bit.ly/streamprom7'
 
-3) Placeholder
+3) Return to Movian/M7 Home Screen.
 
-4) Placeholder
+4) Navigate to Plugins > Browse Available Plugins > Video Streaming > EZTV
 
-5) Placeholder
+5) Select Install (Plugin will now update automatically).
 
-6) Placeholder
+6) Return to Movian/M7 Home Screen and Enjoy!
 
 
 
