@@ -1,8 +1,7 @@
-![EZTV Logo](/logo.png)
-
 **Screenshot:**
 
 ![Screenshot](/Screenshots/1.png)
+
 
 **Features:**
 
@@ -11,6 +10,7 @@
 * Filter Out H.265 (HEVC) Search Results (For PlayStation 3).
 * Apply Minimum Seeder Value to Search Results.
 * Organised Search Result Groups with Box Sets/TV Packs
+
 
 **How to Install (Official Plugin Repository):**
 
@@ -26,23 +26,11 @@
 
 6) Return to Movian/M7 Home Screen and Enjoy!
 
-**How to Install (ZIP):**
 
-1) Coming Soon!
+![Stable-Release plugin.zip Download (Latest Version)](/eztv_stable.zip?raw=true)
 
-2) 
+![Pre-Release plugin.zip (May Contain Bugs)](/eztv_unstable.zip?raw=true)
 
-3) 
-
-4) 
-
-5) 
-
-6) 
-
-
-
- ![Pre-Release Download (May Contain Bugs)](/eztv_unstable.zip?raw=true)
 
 **Available Languages:**
 
