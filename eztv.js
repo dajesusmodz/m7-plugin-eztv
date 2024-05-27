@@ -130,6 +130,25 @@ function tmdbShowMetadata(show) {
 }
 
 function tvShowList(page) {
+    var json = tmdbApi.retrievePopularShows(1);
+    page.entries = 0;
+
+    for (var i in json.results) {
+        if (page.entries < 19) {
+            var show = json.results[i];
+            var item = page.appendItem(plugin.id + ':detail:' + show.id, "directory", tmdbShowMetadata(show));
+            page.entries++;
+        } else {
+            page.appendItem(plugin.id + ":popular", "directory", {
+                title: "See More...",
+                icon: 'https://i.postimg.cc/cJLV4kMN/seemore.png'
+              });
+            break;
+        }
+    }
+}
+
+function tvShowListAll(page) {
     var fromPage = 1;
     var tryToSearch = true;
     page.entries = 0;
@@ -151,6 +170,15 @@ function tvShowList(page) {
     page.paginator = loader;
     page.loading = false;
 }
+
+new page.Route(plugin.id + ':popular', function(page) {
+    page.loading = true;
+    page.model.contents = 'grid';
+    setPageHeader(page, "Popular Shows");
+
+    tvShowListAll(page);
+});  
+
 
 function browseItems(page, query) {
     var fromPage = 1;
